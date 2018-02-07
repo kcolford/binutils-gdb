@@ -1,4 +1,4 @@
-From 1153a55216b49228e45e566d29a666d385c80adc Mon Sep 17 00:00:00 2001
+From 9fc23df7ceaea2fff929c8bbe23826d879552f6b Mon Sep 17 00:00:00 2001
 From: "H.J. Lu" <hjl.tools@gmail.com>
 Date: Tue, 6 Feb 2018 05:23:04 -0800
 Subject: [PATCH] x86-64: Generate branch with PLT32 relocation
@@ -32,41 +32,43 @@ gas/
 ld/
 
 	PR ld/22791
-	* testsuite/ld-x86-64/x86-64.exp: Run PR ld/22791 tests.
+	* testsuite/ld-x86-64/mpx1c.rd: Updated.
 	* testsuite/ld-x86-64/pr22791-1.err: New file.
 	* testsuite/ld-x86-64/pr22791-1a.c: Likewise.
 	* testsuite/ld-x86-64/pr22791-1b.s: Likewise.
 	* testsuite/ld-x86-64/pr22791-2.rd: Likewise.
-	* testsuite/ld-x86-64/pr22791-2a.c: Likewise.
+	* testsuite/ld-x86-64/pr22791-2a.s: Likewise.
 	* testsuite/ld-x86-64/pr22791-2b.c: Likewise.
-	* testsuite/ld-x86-64/pr22791-2c.c: Likewise.
+	* testsuite/ld-x86-64/pr22791-2c.s: Likewise.
+	* testsuite/ld-x86-64/x86-64.exp: Run PR ld/22791 tests.
 ---
- bfd/elf64-x86-64.c                           | 45 +++++++---------------
- gas/config/tc-i386.c                         | 57 +++++++++++++++++++++++++++-
+ bfd/elf64-x86-64.c                           | 45 ++++++++-----------------
+ gas/config/tc-i386.c                         | 49 +++++++++++++++++++++++++++-
  gas/testsuite/gas/i386/ilp32/reloc64.d       |  2 +-
- gas/testsuite/gas/i386/ilp32/x86-64-branch.d |  6 +--
+ gas/testsuite/gas/i386/ilp32/x86-64-branch.d |  6 ++--
  gas/testsuite/gas/i386/reloc64.d             |  2 +-
- gas/testsuite/gas/i386/x86-64-jump.d         |  4 +-
- gas/testsuite/gas/i386/x86-64-mpx-branch-1.d |  6 +--
- gas/testsuite/gas/i386/x86-64-mpx-branch-2.d |  6 +--
- gas/testsuite/gas/i386/x86-64-relax-2.d      |  4 +-
- gas/testsuite/gas/i386/x86-64-relax-3.d      |  2 +-
- ld/testsuite/ld-x86-64/pr22791-1.err         |  2 +
- ld/testsuite/ld-x86-64/pr22791-1a.c          |  4 ++
- ld/testsuite/ld-x86-64/pr22791-1b.s          |  6 +++
- ld/testsuite/ld-x86-64/pr22791-2.rd          |  6 +++
- ld/testsuite/ld-x86-64/pr22791-2a.c          |  7 ++++
+ gas/testsuite/gas/i386/x86-64-jump.d         |  4 +--
+ gas/testsuite/gas/i386/x86-64-mpx-branch-1.d |  6 ++--
+ gas/testsuite/gas/i386/x86-64-mpx-branch-2.d |  6 ++--
+ gas/testsuite/gas/i386/x86-64-relax-2.d      | 10 +++---
+ gas/testsuite/gas/i386/x86-64-relax-3.d      |  8 ++---
+ ld/testsuite/ld-x86-64/mpx1c.rd              |  2 +-
+ ld/testsuite/ld-x86-64/pr22791-1.err         |  2 ++
+ ld/testsuite/ld-x86-64/pr22791-1a.c          |  4 +++
+ ld/testsuite/ld-x86-64/pr22791-1b.s          |  6 ++++
+ ld/testsuite/ld-x86-64/pr22791-2.rd          |  6 ++++
+ ld/testsuite/ld-x86-64/pr22791-2a.s          |  8 +++++
  ld/testsuite/ld-x86-64/pr22791-2b.c          |  7 ++++
- ld/testsuite/ld-x86-64/pr22791-2c.c          |  8 ++++
- ld/testsuite/ld-x86-64/x86-64.exp            | 47 +++++++++++++++++++++++
- 18 files changed, 172 insertions(+), 49 deletions(-)
+ ld/testsuite/ld-x86-64/pr22791-2c.s          | 12 +++++++
+ ld/testsuite/ld-x86-64/x86-64.exp            | 47 ++++++++++++++++++++++++++
+ 19 files changed, 176 insertions(+), 56 deletions(-)
  create mode 100644 ld/testsuite/ld-x86-64/pr22791-1.err
  create mode 100644 ld/testsuite/ld-x86-64/pr22791-1a.c
  create mode 100644 ld/testsuite/ld-x86-64/pr22791-1b.s
  create mode 100644 ld/testsuite/ld-x86-64/pr22791-2.rd
- create mode 100644 ld/testsuite/ld-x86-64/pr22791-2a.c
+ create mode 100644 ld/testsuite/ld-x86-64/pr22791-2a.s
  create mode 100644 ld/testsuite/ld-x86-64/pr22791-2b.c
- create mode 100644 ld/testsuite/ld-x86-64/pr22791-2c.c
+ create mode 100644 ld/testsuite/ld-x86-64/pr22791-2c.s
 
 diff --git a/bfd/elf64-x86-64.c b/bfd/elf64-x86-64.c
 index aad9b85296..aa6a47121b 100644
@@ -153,10 +155,10 @@ index aad9b85296..aa6a47121b 100644
  
  	      if (fail)
 diff --git a/gas/config/tc-i386.c b/gas/config/tc-i386.c
-index 32a8b31d30..5fb9e2a1ca 100644
+index 32a8b31d30..d9ff4103a0 100644
 --- a/gas/config/tc-i386.c
 +++ b/gas/config/tc-i386.c
-@@ -7023,12 +7023,54 @@ output_branch (void)
+@@ -7023,12 +7023,46 @@ output_branch (void)
    frag_var (rs_machine_dependent, 5, i.reloc[0], subtype, sym, off, p);
  }
  
@@ -177,17 +179,6 @@ index 32a8b31d30..5fb9e2a1ca 100644
 +  if (!object_64bit)
 +    return FALSE;
 +
-+  /* Symbol with hidden or internal visibilities doesn't need PLT32
-+     relocation.  */
-+  switch (ELF_ST_VISIBILITY (S_GET_OTHER (s)))
-+    {
-+    default:
-+      break;
-+    case STV_INTERNAL:
-+    case STV_HIDDEN:
-+      return FALSE;
-+    }
-+
 +  /* Weak or undefined symbol need PLT32 relocation.  */
 +  if (S_IS_WEAK (s) || !S_IS_DEFINED (s))
 +    return TRUE;
@@ -196,7 +187,10 @@ index 32a8b31d30..5fb9e2a1ca 100644
 +  if (! S_IS_EXTERNAL (s))
 +    return FALSE;
 +
-+  /* Other global symbols need PLT32 relocation.  */
++  /* Other global symbols need PLT32 relocation.  NB: Symbol with
++     non-default visibilities are treated as normal global symbol
++     so that PLT32 relocation can be used as a marker for 32-bit
++     PC-relative branches.  It is useful for linker relaxation.  */
 +  return TRUE;
 +}
 +#endif
@@ -211,7 +205,7 @@ index 32a8b31d30..5fb9e2a1ca 100644
  
    if (i.tm.opcode_modifier.jumpbyte)
      {
-@@ -7096,8 +7138,17 @@ output_jump (void)
+@@ -7096,8 +7130,17 @@ output_jump (void)
        abort ();
      }
  
@@ -230,7 +224,7 @@ index 32a8b31d30..5fb9e2a1ca 100644
  
    /* All jumps handled here are signed, but don't use a signed limit
       check for 32 and 16 bit jumps as we want to allow wrap around at
-@@ -9315,6 +9366,10 @@ md_estimate_size_before_relax (fragS *fragP, segT segment)
+@@ -9315,6 +9358,10 @@ md_estimate_size_before_relax (fragS *fragP, segT segment)
  	reloc_type = (enum bfd_reloc_code_real) fragP->fr_var;
        else if (size == 2)
  	reloc_type = BFD_RELOC_16_PCREL;
@@ -341,10 +335,10 @@ index 5bb6a57c1e..514c34363e 100644
  [ 	]*[a-f0-9]+:	f2 0f 82 00 00 00 00 	bnd jb 44 <foo2\+0x20>	40: R_X86_64_PLT32	foo-0x4
  [ 	]*[a-f0-9]+:	f2 e8 00 00 00 00    	bnd callq 4a <foo2\+0x26>	46: R_X86_64_PLT32	foo-0x4
 diff --git a/gas/testsuite/gas/i386/x86-64-relax-2.d b/gas/testsuite/gas/i386/x86-64-relax-2.d
-index c124102982..a65d4b2132 100644
+index c124102982..c9eba8452a 100644
 --- a/gas/testsuite/gas/i386/x86-64-relax-2.d
 +++ b/gas/testsuite/gas/i386/x86-64-relax-2.d
-@@ -10,9 +10,9 @@ Disassembly of section .text:
+@@ -10,12 +10,12 @@ Disassembly of section .text:
  0+ <foo>:
  [ 	]*[a-f0-9]+:	eb 24                	jmp    26 <local>
  [ 	]*[a-f0-9]+:	eb 1e                	jmp    22 <hidden_def>
@@ -352,23 +346,44 @@ index c124102982..a65d4b2132 100644
 +[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   9 <foo\+0x9>	5: R_X86_64_PLT32	global_def-0x4
  [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   e <foo\+0xe>	a: R_X86_64_PLT32	global_def-0x4
 -[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   13 <foo\+0x13>	f: R_X86_64_PC32	weak_def-0x4
+-[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   18 <foo\+0x18>	14: R_X86_64_PC32	weak_hidden_undef-0x4
+-[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1d <foo\+0x1d>	19: R_X86_64_PC32	weak_hidden_def-0x4
+-[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   22 <hidden_def>	1e: R_X86_64_PC32	hidden_undef-0x4
 +[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   13 <foo\+0x13>	f: R_X86_64_PLT32	weak_def-0x4
- [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   18 <foo\+0x18>	14: R_X86_64_PC32	weak_hidden_undef-0x4
- [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1d <foo\+0x1d>	19: R_X86_64_PC32	weak_hidden_def-0x4
- [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   22 <hidden_def>	1e: R_X86_64_PC32	hidden_undef-0x4
++[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   18 <foo\+0x18>	14: R_X86_64_PLT32	weak_hidden_undef-0x4
++[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1d <foo\+0x1d>	19: R_X86_64_PLT32	weak_hidden_def-0x4
++[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   22 <hidden_def>	1e: R_X86_64_PLT32	hidden_undef-0x4
+ 
+ 0+22 <hidden_def>:
+ [ 	]*[a-f0-9]+:	c3                   	retq   
 diff --git a/gas/testsuite/gas/i386/x86-64-relax-3.d b/gas/testsuite/gas/i386/x86-64-relax-3.d
-index 98fd28dd11..b87a19ce53 100644
+index 98fd28dd11..28ab5dd3f7 100644
 --- a/gas/testsuite/gas/i386/x86-64-relax-3.d
 +++ b/gas/testsuite/gas/i386/x86-64-relax-3.d
-@@ -11,7 +11,7 @@ Disassembly of section .text:
+@@ -11,10 +11,10 @@ Disassembly of section .text:
  [ 	]*[a-f0-9]+:	eb 1b                	jmp    1f <hidden_def>
  [ 	]*[a-f0-9]+:	eb 1b                	jmp    21 <global_def>
  [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   b <foo\+0xb>	7: R_X86_64_PLT32	global_def-0x4
 -[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   10 <foo\+0x10>	c: R_X86_64_PC32	weak_def-0x4
+-[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   15 <foo\+0x15>	11: R_X86_64_PC32	weak_hidden_undef-0x4
+-[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1a <foo\+0x1a>	16: R_X86_64_PC32	weak_hidden_def-0x4
+-[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1f <hidden_def>	1b: R_X86_64_PC32	hidden_undef-0x4
 +[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   10 <foo\+0x10>	c: R_X86_64_PLT32	weak_def-0x4
- [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   15 <foo\+0x15>	11: R_X86_64_PC32	weak_hidden_undef-0x4
- [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1a <foo\+0x1a>	16: R_X86_64_PC32	weak_hidden_def-0x4
- [ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1f <hidden_def>	1b: R_X86_64_PC32	hidden_undef-0x4
++[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   15 <foo\+0x15>	11: R_X86_64_PLT32	weak_hidden_undef-0x4
++[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1a <foo\+0x1a>	16: R_X86_64_PLT32	weak_hidden_def-0x4
++[ 	]*[a-f0-9]+:	e9 00 00 00 00       	jmpq   1f <hidden_def>	1b: R_X86_64_PLT32	hidden_undef-0x4
+ 
+ 0+1f <hidden_def>:
+ [ 	]*[a-f0-9]+:	c3                   	retq   
+diff --git a/ld/testsuite/ld-x86-64/mpx1c.rd b/ld/testsuite/ld-x86-64/mpx1c.rd
+index d3b292cbdc..d66524c883 100644
+--- a/ld/testsuite/ld-x86-64/mpx1c.rd
++++ b/ld/testsuite/ld-x86-64/mpx1c.rd
+@@ -1,3 +1,3 @@
+ #...
+-[0-9a-f ]+R_X86_64_PC32 +0+ +.*
++[0-9a-f ]+R_X86_64_PLT32 +0+ +.*
+ #...
 diff --git a/ld/testsuite/ld-x86-64/pr22791-1.err b/ld/testsuite/ld-x86-64/pr22791-1.err
 new file mode 100644
 index 0000000000..5500fa55ce
@@ -411,19 +426,20 @@ index 0000000000..70deb30d84
 +#...
 +[0-9a-f ]+R_X86_64_NONE.*
 +#...
-diff --git a/ld/testsuite/ld-x86-64/pr22791-2a.c b/ld/testsuite/ld-x86-64/pr22791-2a.c
+diff --git a/ld/testsuite/ld-x86-64/pr22791-2a.s b/ld/testsuite/ld-x86-64/pr22791-2a.s
 new file mode 100644
-index 0000000000..8b23ec8f2b
+index 0000000000..0a855024d7
 --- /dev/null
-+++ b/ld/testsuite/ld-x86-64/pr22791-2a.c
-@@ -0,0 +1,7 @@
-+extern void bar (void);
-+
-+void
-+foo (void)
-+{
-+  bar ();
-+}
++++ b/ld/testsuite/ld-x86-64/pr22791-2a.s
+@@ -0,0 +1,8 @@
++	.text
++	.p2align 4,,15
++	.globl	foo
++	.type	foo, @function
++foo:
++	jmp	bar
++	.size	foo, .-foo
++	.section	.note.GNU-stack,"",@progbits
 diff --git a/ld/testsuite/ld-x86-64/pr22791-2b.c b/ld/testsuite/ld-x86-64/pr22791-2b.c
 new file mode 100644
 index 0000000000..79ef27c085
@@ -437,22 +453,26 @@ index 0000000000..79ef27c085
 +{
 +  puts ("PASS");
 +}
-diff --git a/ld/testsuite/ld-x86-64/pr22791-2c.c b/ld/testsuite/ld-x86-64/pr22791-2c.c
+diff --git a/ld/testsuite/ld-x86-64/pr22791-2c.s b/ld/testsuite/ld-x86-64/pr22791-2c.s
 new file mode 100644
-index 0000000000..f1cb6b492b
+index 0000000000..1460d1b828
 --- /dev/null
-+++ b/ld/testsuite/ld-x86-64/pr22791-2c.c
-@@ -0,0 +1,8 @@
-+extern void foo (void);
-+
-+int
-+main (void)
-+{
-+  foo ();
-+  return 0;
-+}
++++ b/ld/testsuite/ld-x86-64/pr22791-2c.s
+@@ -0,0 +1,12 @@
++	.text
++	.p2align 4,,15
++	.globl	main
++	.type	main, @function
++main:
++	subq	$8, %rsp
++	call	foo
++	xorl	%eax, %eax
++	addq	$8, %rsp
++	ret
++	.size	main, .-main
++	.section	.note.GNU-stack,"",@progbits
 diff --git a/ld/testsuite/ld-x86-64/x86-64.exp b/ld/testsuite/ld-x86-64/x86-64.exp
-index af3afcc2c7..8dac1c4dfa 100644
+index af3afcc2c7..a649de87cd 100644
 --- a/ld/testsuite/ld-x86-64/x86-64.exp
 +++ b/ld/testsuite/ld-x86-64/x86-64.exp
 @@ -1152,6 +1152,44 @@ if { [isnative] && [which $CC] != 0 } {
@@ -478,8 +498,8 @@ index af3afcc2c7..8dac1c4dfa 100644
 +	[list \
 +	    "Build pr22791-2a.o" \
 +	    "" \
-+	    "-fno-PIC $NOPIE_CFLAGS" \
-+	    { pr22791-2a.c } \
++	    "$NOPIE_CFLAGS" \
++	    { pr22791-2a.s } \
 +	] \
 +	[list \
 +	    "Build pr22791-2.so" \
@@ -493,7 +513,7 @@ index af3afcc2c7..8dac1c4dfa 100644
 +	    "Build pr22791-2" \
 +	    "-pie -Wl,--no-as-needed tmpdir/pr22791-2.so" \
 +	    "$NOPIE_CFLAGS" \
-+	    { pr22791-2c.c } \
++	    { pr22791-2c.s } \
 +	    {{readelf -drW pr22791-2.rd}} \
 +	    "pr22791-2" \
 +	] \
@@ -508,7 +528,7 @@ index af3afcc2c7..8dac1c4dfa 100644
 +	    "Run pr22791-2" \
 +	    "-pie -Wl,--no-as-needed tmpdir/pr22791-2.so" \
 +	    "" \
-+	    { pr22791-2c.c } \
++	    { pr22791-2c.s } \
 +	    "pr22791-2" \
 +	    "pass.out" \
 +	    "$NOPIE_CFLAGS" \
